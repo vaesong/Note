@@ -41,6 +41,7 @@ nvidia-docker run -it --mount type=bind,source=$MATTERPORT_DATA_DIR,target=/root
 
 6、docker容器运行中宕机
 如果不能运行，首先找到缓存文件
+
 ```Python
 find /var/run/docker -name id(jkhbljjkahoahda256a165a1651d6a)
 ```
@@ -55,3 +56,39 @@ rm -rf /var/run/docker/runtime-runc/moby/322aa5b139b2d792c5c096a997387fffa94e501
 ```Python
  pip install torch==1.8.1+cu101 torchvision==0.9.1+cu101 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html -i http://mirrors.aliyun.com/pypi/simple/
 ```
+
+8、Push 镜像到 docker hub上面
+
+首先是登录到 docker hub 官网，然后创建一个仓库
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images/20220913130356.png)
+
+之后，需要在 linux 上面登录到自己的 docker hub 账号，输入账号密码
+
+```dockerfile
+docker login
+```
+
+然后注意，需要修改要上传的镜像名称，使用 tag 命令，一定要修改成 [账户名] [仓库名]：[tagname] 的形式
+
+```dockerfile
+docker tag [之前的名称]:[之前的tag] [修改的名称]:[修改的tag]
+docker tag mattersim:9.2-devel-ubuntu18.04 vaesong/mattersim:9.2-devel-ubuntu18.04
+```
+
+之后，执行命令上传
+
+```dockerfile
+docker push vaesong/mattersim:9.2-devel-ubuntu18.04
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images/20220913131203.png)
+
+最后退出登录
+
+```dockerfile
+docker logout
+```
+
+
+

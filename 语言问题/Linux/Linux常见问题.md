@@ -169,13 +169,19 @@ ssh-keygen -t rsa -C "18365519973@163.com"
 
 其中最主要的操作就是：
 
-```git
+```shell
 git init //把这个目录变成Git可以管理的仓库
 git add README.md //文件添加到仓库
 git add . //不但可以跟单一文件，还可以跟通配符，更可以跟目录。一个点就把当前目录下所有未追踪的文件全部add了 
 git commit -m "first commit" //把文件提交到仓库
-git remote add origin git@github.com:wangjiax9/practice.git //关联远程仓库
-git push -u origin master //把本地库的所有内容推送到远程库上
+git remote add origin git@github.com:vaesong/Note.git //关联远程仓库
+git push -u origin main //把本地库的所有内容推送到远程库上
+```
+
+如果出现`error: remote origin already exists.`这种情况，需要先删除关联的 origin 的远程仓库
+
+```Shell
+git remote rm origin
 ```
 
 实际上在进行 git 上传的时候，github并没有完全把文件显示，是因为有些文件夹是空的，必须有东西时，才会上传成功，单个文件夹是无法上传成功的！！！

@@ -246,7 +246,7 @@ export DISPLAY=:0.0
 [PicGo官网](https://github.com/Molunerfinn/PicGo/releases) 去下载发行版，选择 appimage，这样下载后直接双击就能运行，配置PicGo，下面是一些配置以及相应的 token
 
 ```Shell
-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
+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
 # 加速
 https://cdn.jsdelivr.net/gh/vaesong/Images/
 ```
@@ -432,6 +432,25 @@ sudo apt install peek
 [在Linux 系统下安装zotero](https://blog.csdn.net/aiboom/article/details/123245533)
 
 **存储路径**在**高级**里面的**文件和文件夹**下的**数据存储位置**
+
+
+
+## OBS（录屏软件）
+
+```Shell
+# 打开终端添加PPA:
+sudo add-apt-repository ppa:obsproject/obs-studio
+# 软件更新
+sudo apt-get update
+# 安装OBS-studio
+sudo apt-get install obs-studio
+```
+
+在安装软件包的时候，发现执行add-apt-repository命令会出现错误，无法添加软件源
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20221006164133.png)
+
+修改`/usr/lib/python3/dist-packages/softwareproperties/SoftwareProperties.py`文件，第777行的`isAlive`改成`is_alive`即可
 
 
 

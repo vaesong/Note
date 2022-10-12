@@ -359,3 +359,69 @@ curl cip.cc
 
 
 
+# ssh免密登录
+
+基本原理：ssh登录分为两种：
+
+- 口令登录
+
+> 客户端发起请求
+>
+> 服务端发送自己的公钥给客户端
+>
+> 客户端用 公钥加密密码，发给服务器
+>
+> 然后服务器用私钥解密，如果密码正确，登录成功
+
+- 密钥登录
+
+> 先把客户端的公钥发送给服务器
+>
+> 然后客户端发送请求，例如登录请求
+>
+> 服务器端在授权的密钥列表中查找，找到了，就用客户端的公钥加密一个 自己 随机生成的字符串，发送给客户端
+>
+> 然后客户端用自己的私钥进行解密，再把解密之后的字符串发给服务器端
+>
+> 服务器端验证成功后，即登录成功
+
+可以参考这篇，不过注意公钥只能加密，私钥只能解密 [SSH原理与运用（一）：远程登录](https://www.ruanyifeng.com/blog/2011/12/ssh_remote_login.html)
+
+下面是服务器配置免密过程
+
+1、首先客户端生成公钥和私钥，如果没有 .ssh 的话，需要手动生成
+
+```Shell
+ssh-keygen -t rsa -C "18365519973@163.com"
+```
+
+2、然后把客户端的公钥复制到服务器，相应的用户名的 `.ssh` 下面，例如 `/home/zp_3c/.ssh`。注意不要复制错了，**先打开插入模式**
+
+```Shell
+# 如果没有授权文件，需要自己创建
+vim ~/.ssh/authorized_keys
+```
+
+3、这时候，需要修改 `.ssh` 和 `authorized_keys` 的权限，这俩文件只能让所有者有权限操作，否则验证不通过
+
+```Shell
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+4、如果不能登录的话，看一下配置文件的 `AuthorizedKeysFile` 是否是打开的
+
+```Shell
+sudo vim /etc/ssh/sshd_config
+# AuthorizedKeysFile 修改成下面的样子
+AuthorizedKeysFile      %h/.ssh/authorized_keys
+```
+
+5、最后，重启 `ssh` 服务
+
+```Shell
+service sshd restart
+```
+
+
+

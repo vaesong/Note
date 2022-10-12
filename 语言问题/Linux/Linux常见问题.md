@@ -152,6 +152,8 @@ echo $PATH
 
 参考这两篇文章[Git上传文件代码到GitHub（超详细）](https://blog.csdn.net/weixin_43806049/article/details/124963415)、[手把手教你用git上传项目到GitHub](https://zhuanlan.zhihu.com/p/193140870)
 
+这篇博客超级详细的解释了原理 [Git 原理详解及实用指南](https://blog.csdn.net/Aria_Miazzy/article/details/107782890)
+
 首先安装 git，然后配置用户名和邮箱
 
 ```Shell

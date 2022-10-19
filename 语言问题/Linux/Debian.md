@@ -554,6 +554,14 @@ export http_proxy=http://127.0.0.1:8889
 export all_proxy=socks5://127.0.0.1:1089
 ```
 
+关掉代理
+
+```shell
+unset https_proxy
+unset http_proxy
+unset all_proxy
+```
+
 
 
 ## 美化主题

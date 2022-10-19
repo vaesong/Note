@@ -188,6 +188,30 @@ git remote rm origin
 
 实际上在进行 git 上传的时候，github并没有完全把文件显示，是因为有些文件夹是空的，必须有东西时，才会上传成功，单个文件夹是无法上传成功的！！！
 
+可能在 `pull` 的时候还会碰到冲突的情况
+
+- 将本地修改放入**缓存区**(成功后本地**工作区间**的代码跟**本地仓库**代码会同步)
+
+```shell
+git stash 
+```
+
+- 从**远程仓库**获取最新代码
+
+```Shell
+git pull
+```
+
+- 然后， 取出本地修改的代码
+
+```Shell
+git stash pop
+```
+
+之后，再根据提示的冲突文件，进行手工修改
+
+
+
 # 两台服务器之间传输文件夹
 
 [参考这里](https://blog.csdn.net/qq_42224274/article/details/81735315?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-81735315-blog-125486150.pc_relevant_multi_platform_whitelistv5&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-81735315-blog-125486150.pc_relevant_multi_platform_whitelistv5&utm_relevant_index=1)
@@ -423,6 +447,201 @@ AuthorizedKeysFile      %h/.ssh/authorized_keys
 
 ```Shell
 service sshd restart
+```
+
+
+
+# frp实现通过公网ip访问内网
+
+通过frp搭建隧道，使外网可以直接SSH连接校园网中的服务器，知乎的一篇文章，跟着教程做就行 [参考链接](https://www.zhihu.com/question/22568892)
+
+0.42.0 版本是有 `systemd` 文件的
+
+## 1、准备
+
+1. 固定IP的公网服务器一台（阿里云服务器）
+2. 校园网中可SSH连接的实验室服务器若干台（以下步骤需要重复N次）
+
+## 2、步骤
+
+公网服务器作为fcp服务器，校园网服务器作为frp客户端。部署成功后，访问者主机使用SSH命令可直接访问校园网服务器。
+
+- 公网服务器操作
+
+- - 在所需目录下，下载frp压缩包并解压
+  - 编辑frp公网服务器配置文件frps.ini
+  - 开放公网服务器入站端口（frp服务器服务端口和服务端口）
+  - 配置环境，以服务运行
+  - 网页登录frp管理服务
+
+- 校园网服务器操作
+
+- - 在所需目录下，下载frp压缩包并解压
+  - 编辑frp客户端配置文件frpc.ini
+  - 开放公网服务器入站端口（对应每一个frp客户端，frp服务器都需要监听一个对应的端口）
+  - 配置环境，以服务运行
+
+### 2.1 公网服务器操作
+
+本人选择阿里云云服务器作为公网服务器，IP为 `120.76.100.14`，请注意替换。
+
+frp工作原理为：
+
+1. 服务端运行，监听一个主端口，等待客户端的连接；
+2. 客户端连接到服务端的主端口，同时告诉服务端要监听的端口和转发类型；
+3. 服务端fork新的进程监听客户端指定的端口；
+4. 外网用户连接到客户端指定的端口，服务端通过和客户端的连接将数据转发到客户端；
+5. 客户端进程再将数据转发到本地服务，从而实现内网对外暴露服务的能力。
+
+### 下载frp并解压
+
+在 [frp下载页面](https://link.zhihu.com/?target=https%3A//github.com/fatedier/frp/releases) 选择合适版本下载。
+
+在用户目录下创建frp目录，并在其中下载压缩包，并解压进入解压目录。
+
+```Shell
+mkdir ~/frp
+cd ~/frp
+wget https://github.com/fatedier/frp/releases/download/v0.38.0/frp_0.38.0_linux_amd64.tar.gz
+tar -zxvf frp_0.38.0_linux_amd64.tar.gz
+cd frp_0.38.0_linux_amd64
+```
+
+解压目录如下，其中frps系列文件主要用于frp服务器，frpc系列文件主要用于frp客户端（校园网服务器）。
+
+稍后我们在校园服务器上也需要下载同样的软件包。
+
+```Shell
+frp_0.38.0_linux_amd64
+├── frpc
+├── frpc_full.ini
+├── frpc.ini
+├── frps
+├── frps_full.ini
+├── frps.ini
+├── LICENSE
+└── systemd
+    ├── frpc.service
+    ├── frpc@.service
+    ├── frps.service
+    └── frps@.service
+```
+
+### 编辑frp服务器配置文件frps.ini
+
+```Shell
+[common]
+# frp监听的端口，默认是7000，可以改成其他的
+bind_port = 7000
+# 授权码，请改成更复杂的
+token = 12345678
+
+# frp管理后台端口，请按自己需求更改
+dashboard_port = 7500
+# frp管理后台用户名和密码，请改成自己的
+dashboard_user = admin
+dashboard_pwd = admin
+enable_prometheus = true
+```
+
+### 开放公网服务器入站端口
+
+在云服务器网络设置中，添加以上7000（frp服务器绑定端口）和7500（frp服务管理网页访问端口）TCP协议的入站规则。
+
+### 配置环境，以服务运行
+
+当前路径下，一般可以通过`./frps -c frps.ini`直接开启服务，但是SSH连接断开后就会失效，所以需要借助systemd服务运行。
+
+```Shell
+cd ~/frp/frp_0.38.0_linux_amd64/
+sudo mkdir -p /etc/frp
+sudo cp frps.ini /etc/frp
+sudo cp frps /usr/bin
+sudo cp systemd/frps.service /usr/lib/systemd/system/
+sudo systemctl enable frps
+sudo systemctl start frps
+```
+
+### 网页登录frp管理服务
+
+顺利的话，可以登录`公网ip:frp服务管理网页访问端口`查看frp的管理界面。下图已经有一个客户端连接。
+
+### 2.2 校园网服务器操作
+
+校园网服务器下载frp并配置客户端文件，以服务运行。
+
+### 下载frp压缩包并解压
+
+同公网服务器。
+
+```shell
+mkdir ~/frp
+cd ~/frp
+wget https://github.com/fatedier/frp/releases/download/v0.38.0/frp_0.38.0_linux_amd64.tar.gz
+tar -zxvf frp_0.38.0_linux_amd64.tar.gz
+cd frp_0.38.0_linux_amd64
+```
+
+### 编辑frp客户端配置文件frpc.ini
+
+```Shell
+# 服务端配置
+[common]
+server_addr = 120.76.100.14
+# 请换成设置的服务器端口
+server_port = 7000
+token = 12345678
+
+# 配置ssh服务,ssh9009是frp连接名，每个frp客户端都要设置不一样的
+[ssh9018]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 22
+remote_port = 9018  #这个端口就对应了一台实验室服务器的SSH连接，这里把端口和校园网服务器编号保持一致方便记忆
+```
+
+### 开放公网服务器入站端口
+
+### 配置环境，以服务运行
+
+```shell
+cd ~/frp/frp_0.38.0_linux_amd64/
+sudo mkdir -p /etc/frp
+sudo cp frpc.ini /etc/frp
+sudo cp frpc /usr/bin
+sudo mkdir /usr/lib/systemd/system/
+sudo cp systemd/frpc.service /usr/lib/systemd/system/
+sudo systemctl enable frpc
+
+# Created symlink from /etc/systemd/system/multi-user.target.wants/frpc.service to /usr/lib/systemd/system/frpc.service.
+
+sudo systemctl start frpc
+```
+
+### 网页登录frp管理服务验证
+
+## 3、SSH远程登录
+
+登录失败的话，如果报错
+
+```shell
+[W] [service.go:104] login to server failed: i/o deadline reached i/o deadli
+```
+
+在客户端的（也就是内网服务器）的 `frpc.ini` 的文件中，加上 `tls_enable = true`
+
+```Shell
+[common]
+server_addr = 120.76.100.14
+server_port = 7000
+token=123456789
+tls_enable=true
+
+[ssh6001]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 22
+remote_port = 6001
 ```
 
 

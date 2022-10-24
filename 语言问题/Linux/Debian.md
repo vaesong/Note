@@ -326,7 +326,9 @@ sudo apt install fonts-firacode
 
 这里就直接装好了，不需要下面的脚本
 
-到 Vscode 设置里面，搜索 `Front Family` 进行修改，改为 `Fira Code`
+到 Vscode 设置里面，搜索 `Font Family` 进行修改，改为 `Fira Code`
+
+.
 
 
 
@@ -638,6 +640,16 @@ conda config --set show_channel_urls yes
 # 查看是否添加成功
 conda config --show
 ```
+
+查看 `pytorch` 版本是否对应，是否能使用
+
+```python
+print(torch.__version__)
+print(torch.cuda.is_available())
+print(torch.cuda.device_count())
+```
+
+
 
 ## Linux 下 C++ 
 

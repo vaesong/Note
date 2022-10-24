@@ -124,6 +124,53 @@ test.exe
 
 
 
+# 添加用户 useradd
+
+常见用法
+
+```Shell
+sudo useradd 3c -m -d /data1/3c -s /bin/bash
+sudo ln -s /data1/3c /home/3c
+# 到 /etc/passwd 文件中修改家目录
+sudo vim /etc/passwd
+```
+
+
+
+```Shell
+用法：useradd [选项] 登录
+      useradd -D
+      useradd -D [选项]
+
+选项：
+  -b, --base-dir BASE_DIR       新账户的主目录的基目录
+  -c, --comment COMMENT         新账户的 GECOS 字段
+  -d, --home-dir HOME_DIR       新账户的主目录 （要与 -m 配合使用）
+  -D, --defaults                显示或更改默认的 useradd 配置
+  -e, --expiredate EXPIRE_DATE  新账户的过期日期
+  -f, --inactive INACTIVE       新账户的密码不活动期
+  -g, --gid GROUP               新账户主组的名称或 ID
+  -G, --groups GROUPS   新账户的附加组列表
+  -h, --help                    显示此帮助信息并推出
+  -k, --skel SKEL_DIR   使用此目录作为骨架目录
+  -K, --key KEY=VALUE           不使用 /etc/login.defs 中的默认值
+  -l, --no-log-init     不要将此用户添加到最近登录和登录失败数据库
+  -m, --create-home     创建用户的主目录
+  -M, --no-create-home          不创建用户的主目录
+  -N, --no-user-group   不创建同名的组
+  -o, --non-unique              允许使用重复的 UID 创建用户
+  -p, --password PASSWORD               加密后的新账户密码
+  -r, --system                  创建一个系统账户
+  -R, --root CHROOT_DIR         chroot 到的目录
+  -P, --prefix PREFIX_DIR       prefix directory where are located the /etc/* files
+  -s, --shell SHELL             新账户的登录 shell
+  -u, --uid UID                 新账户的用户 ID
+  -U, --user-group              创建与用户同名的组
+  -Z, --selinux-user SEUSER             为 SELinux 用户映射使用指定 SEUSER
+```
+
+
+
 # Linux 不能图形化问题
 
 - 查看Xshell连接的时候 是否有问题 [链接](https://blog.csdn.net/wugenqiang/article/details/86554753)
@@ -141,6 +188,42 @@ test.exe
 
 > 执行以下命令
 > `sudo sysctl vm.overcommit_memory=1`
+
+
+
+# 服务器不能Vscode不能显示
+
+使用 `vscode` 进行远程登录的情况下，对于一些需要图像化显示的问题，总是会报 qt 的错误
+
+```Shell
+qt.qpa.xcb: could not connect to display 
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+
+Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, vnc, wayland-egl, wayland, wayland-xcomposite-egl, wayland-xcomposite-glx, webgl, xcb.
+```
+
+这种情况下需要使用 `xvfb-run` 进行启动，但是使用这个命令的话，就没有办法进行调试了，因为没找到调试的参数可以加 `xvfb-run`
+
+后来经过查找，可以在终端 `ssh` 的时候，加上 `-X` 参数，或者在 `vscode` 的 `remote ssh` 时候，向下面一样配置，加上下面三行 yes ，这样的话，就不需要加上 `xvfb-run` 也能运行了，也就可以调试了
+
+```shell
+Host liuchang
+    HostName 120.76.100.14
+    Port 6001
+    ForwardX11 yes
+    ForwardX11Trusted yes
+    ForwardAgent yes
+    User liuchang
+```
+
+# 服务器的 tensorboard 可视化
+
+```Shell
+ssh -L 本地端口:127.0.0.1:TensorBoard端口 用户名@服务器的IP地址 -p 服务器登录端口
+```
+
+
 
 # Linux下查看环境变量
 
@@ -216,6 +299,8 @@ git stash pop
 
 [参考这里](https://blog.csdn.net/qq_42224274/article/details/81735315?spm=1001.2101.3001.6661.1&utm_medium=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-81735315-blog-125486150.pc_relevant_multi_platform_whitelistv5&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-81735315-blog-125486150.pc_relevant_multi_platform_whitelistv5&utm_relevant_index=1)
 
+注意这里是大 P
+
 ```shell
 scp -P [目标服务器的端口] [要传输的文件路径] [目标用户名]@[目标IP]:[目标文件路径]
 scp -P 13122 Matterport3D.tar lhui@166.111.138.88:/home/lhui
@@ -225,6 +310,17 @@ scp -P 13122 zp_3c@166.111.138.88:~/Anaconda3-2020.02-Linux-x86_64.sh /home/vaes
 ```
 
 本地与服务器之间传输文件，[点击这里](https://www.cnblogs.com/doubleyue/p/14688181.html)
+
+使用frp搭建的内网穿透不能用 scp 命令了，使用 sftp
+
+```Shell
+# sftp username@ip 
+sftp username@ip
+# 将文件上传到服务器上
+put [本地文件的地址] [服务器上文件存储的位置]
+# 将服务器上的文件下载到本地
+get [服务器上文件存储的位置] [本地要存储的位置]
+```
 
 
 
@@ -643,6 +739,12 @@ local_ip = 127.0.0.1
 local_port = 22
 remote_port = 6001
 ```
+
+
+
+# Linux 删除问题
+
+一定停止所有写入操作！！！还是有机会的，[参考这篇博客](https://blog.csdn.net/qq_40907977/article/details/106761592)
 
 
 

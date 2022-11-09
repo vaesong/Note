@@ -207,6 +207,27 @@ Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, 
 
 后来经过查找，可以在终端 `ssh` 的时候，加上 `-X` 参数，或者在 `vscode` 的 `remote ssh` 时候，向下面一样配置，加上下面三行 yes ，这样的话，就不需要加上 `xvfb-run` 也能运行了，也就可以调试了
 
+还需要执行下面的命令，但是，我怎么知道是 11.0 呢，而不是 0.0？
+
+破案了，这里其实是把服务器的显示给转发到了我的 `Linux` 上。[DISPLAY的解释](https://blog.csdn.net/landdin2013/article/details/48264831)
+
+```shell
+export DISPLAY=localhost:11.0
+```
+
+使用下面的命令去查找，但是好像要设置了，才能找到...可是一开始怎么知道如何设置呢（这个只有在正确的连接之后，才能看到）
+
+```Shell
+# 应该是过滤 display
+xdpyinfo | grep display
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20221027144923.png)
+
+![image-20221027145309572](/home/vaesong/.config/Typora/typora-user-images/image-20221027145309572.png)
+
+`vscode` 安装扩展 `Remote X11 (SSH)` ， 好像不用 SSH 的版本
+
 ```shell
 Host liuchang
     HostName 120.76.100.14
@@ -231,6 +252,12 @@ ssh -L 本地端口:127.0.0.1:TensorBoard端口 用户名@服务器的IP地址 -
 echo $PATH
 ```
 
+
+
+# vscode单击右键容易误触(自动点击)
+
+[参考这篇博客](https://blog.csdn.net/qq_42330920/article/details/125778044)
+
 # Git连接github进行提交
 
 参考这两篇文章[Git上传文件代码到GitHub（超详细）](https://blog.csdn.net/weixin_43806049/article/details/124963415)、[手把手教你用git上传项目到GitHub](https://zhuanlan.zhihu.com/p/193140870)
@@ -248,6 +275,7 @@ git config --global user.email “18365519973@163.com”
 
 ```Shell
 ssh-keygen -t rsa -C "18365519973@163.com"
+ssh-keygen -t rsa
 ```
 
 
@@ -259,7 +287,7 @@ git init //把这个目录变成Git可以管理的仓库
 git add README.md //文件添加到仓库
 git add . //不但可以跟单一文件，还可以跟通配符，更可以跟目录。一个点就把当前目录下所有未追踪的文件全部add了 
 git commit -m "first commit" //把文件提交到仓库
-git remote add origin git@github.com:vaesong/Note.git //关联远程仓库
+git remote add origin git@github.com:vaesong/Note.git //关联远程仓库,只需要第一次做
 git push -u origin main //把本地库的所有内容推送到远程库上
 ```
 
@@ -321,8 +349,6 @@ put [本地文件的地址] [服务器上文件存储的位置]
 # 将服务器上的文件下载到本地
 get [服务器上文件存储的位置] [本地要存储的位置]
 ```
-
-
 
 # 挂载U盘
 
@@ -747,4 +773,210 @@ remote_port = 6001
 一定停止所有写入操作！！！还是有机会的，[参考这篇博客](https://blog.csdn.net/qq_40907977/article/details/106761592)
 
 
+
+# 防火墙放行端口
+
+[参考这里](https://blog.csdn.net/weixin_44916305/article/details/118355953)
+
+# 深大堡垒机连
+
+```Shell
+ssh -o PreferredAuthentications=keyboard-interactive  192750@210.39.9.3
+```
+
+
+
+# 命令行向文件写入
+
+通过重定向符`>>`，向文件加入内容，可以使用`echo`，`cat` 等，但是注意，`>`是会进行覆盖的，而 `>>` 不会，谨慎操作。[参考这里](https://www.cnblogs.com/Hackerman/p/15995862.html)
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20221101182214.png)
+
+# 挖矿病毒
+
+发现某个进程 `ld-linux-x86-64` 一直在占用 CPU，便把其 kill 了
+
+但是即使 kill 了之后，依然会再次启动，查询得知，是别人的挖矿病毒。[服务器被挖矿入侵](https://blog.csdn.net/xfxfxfxfxf666/article/details/93308360)
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//2022-11-07_10-02.png)
+
+1、初步查询，结果如下图
+
+```shell
+sudo find / -name ld-linux*
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//2022-11-07_10-09.png)
+
+通过简单分析，`ld-linux-x86-64.so.2` 应该是黑客模拟系统的文件名称，并且还放在 `/tmp/.font-unix` 这个隐藏文件夹下。黑客也有可能写其他跟系统类似的文件，也会放在其他用户比较熟悉的文件夹名称下，混淆视听。
+
+注意这里的通常是 `/tmp`，`dev` 等文件夹下面，`usr` 下面的通常都是一些系统的链接库等，一般不能删除，当然不排除被黑客入侵到了那里
+
+2、查看是否有定时任务
+
+大部分挖矿木马会通过在受感染主机中写入计划任务实现持久化，如果仅仅只是清除挖矿进程，无法将其根除，到了预设的时间点，系统会通过计划任务从黑客的C2服务器重新下载并执行挖矿木马。
+
+查看指定用户的定时任务，发现果然有可疑的定时任务
+
+```Shell
+sudo crontab -u tianyu -l
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//2022-11-07_10-36.png)
+
+到这里就可以确定是被植入了挖矿木马，删除 `/tmp/.font-unix/CVE-2021-4034-main` 下的 `lan` 文件夹就行了
+
+在 `var/spool/cron` 下面，查看是否有恶意仿造的文件，是否存在非法定时任务脚本，并清理
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//2022-11-07_13-19.png)
+
+- 1>/dev/null 首先表示标准输出重定向到空设备文件，也就是不输出任何信息到终端，说白了就是不显示任何信息。
+-  2>&1 接着，标准错误输出重定向等同于标准输出，因为之前标准输出已经重定向到了空设备文件，所以标准错误输出也重定向到空设备文件。
+- 总的来说，就是不会在终端显示任何输出信息以及错误信息
+
+3、继续排查后续
+
+[云服务器被植入挖矿木马，CPU飙升200%](https://blog.csdn.net/qq_23930765/article/details/121105205)
+
+排查一下被入侵用户的 `.ssh` 下面是否被授权免密登录了
+
+```Shell
+# 被入侵用户的.ssh
+~/.ssh/authorized_keys
+```
+
+还要排查以下目录及文件，及时删除可疑的启动项。排查的时候，可以按照文件修改时间来排序，重点排查近期被创建服务项
+
+```Shell
+ll -t /usr/lib/systemd/system
+ll -t /usr/lib/systemd/system/multi-user.target.wants
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//2022-11-07_13-07.png)
+
+4、后续，查看用户登录
+
+```Shell
+last
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//2022-11-07_13-42.png)
+
+# 防火墙问题
+
+## firewall
+
+1、查看firewall服务状态
+
+```
+systemctl status firewalld
+```
+
+出现`Active: active (running)`切高亮显示则表示是启动状态。
+
+出现`Active: inactive (dead)`灰色表示停止，看单词也行。
+
+2、查看firewall的状态
+
+```
+firewall-cmd --state
+```
+
+3、开启、重启、关闭、firewalld.service服务
+
+\# 开启
+
+```shell
+service firewalld start
+```
+
+\# 重启
+
+```
+service firewalld restart
+```
+
+\# 关闭
+
+```
+service firewalld stop
+```
+
+4、查看防火墙规则
+
+```
+firewall-cmd --list-all
+```
+
+5、查询、开放、关闭端口
+
+\# 查询端口是否开放
+
+```
+firewall-cmd --query-port=8080/tcp
+```
+
+\# 开放80端口
+
+```
+firewall-cmd --permanent --add-port=80/tcp
+```
+
+\# 移除端口
+
+```
+firewall-cmd --permanent --remove-port=8080/tcp
+```
+
+\#重启防火墙(修改配置后要重启防火墙)
+
+```
+firewall-cmd --reload
+```
+
+参数解释
+
+1、`firwall-cmd`：是Linux提供的操作firewall的一个工具；
+
+2、`permanent`：表示设置为持久；
+
+3、`add-port`：标识添加的端口；
+
+## ufw
+
+1、查看防火墙当前状态
+
+```shell
+systemctl status ufw
+```
+
+2、开启防火墙
+
+```Shell
+sudo ufw enable
+```
+
+3、关闭防火墙
+
+```Shell
+sudo ufw disable
+```
+
+4、允许某个IP地址访问本机所有端口
+
+```Shell
+sudo ufw allow from 120.76.100.14
+```
+
+5、允许外部访问某个端口
+
+```Shell
+sudo ufw allow 80
+```
+
+6、要删除一条规则
+
+```Shell
+sudo ufw delete allow 80
+```
 

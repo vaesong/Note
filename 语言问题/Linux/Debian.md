@@ -246,7 +246,7 @@ export DISPLAY=:0.0
 [PicGo官网](https://github.com/Molunerfinn/PicGo/releases) 去下载发行版，选择 appimage，这样下载后直接双击就能运行，配置PicGo，下面是一些配置以及相应的 token
 
 ```Shell
-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
+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
 # 加速
 https://cdn.jsdelivr.net/gh/vaesong/Images/
 ```
@@ -403,13 +403,27 @@ sudo dpkg --configure -a
 
 设置全局快捷键像下面这张图
 
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20221027151732.png)
 
+### 截图出现偏移现象
 
-## 视频播放器
+去 `github` 上找了很多，设置 `QT_SCREEN_SCALE_FACTORS` 什么的都没用
+
+最后试了一下，把屏幕的缩放关掉，设置成 100%，然后把字体的 `DPI`改成 120 左右，重启之后就能正常工作了
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20221027164215.png)
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20221027164259.png)
+
+## MPV视频播放器
 
 ```Shell
 sudo apt install mpv
 ```
+
+可以添加配置文件，修改常用的设置，[参考这里](https://www.bilibili.com/read/cv13479755/)
+
+如果想设置 播放完后不自动关闭， `mvp.conf` 加入一行 `keep-open=yes`
 
 
 
@@ -655,24 +669,30 @@ print(torch.cuda.device_count())
 
 其实最主要的就是能够进行调试，两个文件，一个是 `lauuch.json`，另外一个是 `tasks.json`
 
--  `tasks.json`按 F5，然后再点击C++（GDB/LLDB）-> C/C++: **g++ 生成活动文件**，下面是配置
+- `tasks.json`主要是用来进行编译以及生成可执行文件的，类似于 `g++ main.cpp -o main`
+- `lauuch.json` 是用来 `debug` 的，其中最重要的设置就两个
+
+
+
+`tasks.json`按 F5，然后再点击C++（GDB/LLDB）-> C/C++: **g++ 生成活动文件**，下面是配置
 
 ```json
 {
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: g++ 生成活动文件",
-            "command": "/usr/bin/g++",
-            "args": [
+            "label": "C/C++: g++ 生成活动文件",	//这里的label，是后续 debug 的基础，也就是相当于名字
+            "command": "/usr/bin/g++", 		//使用 g++ 进行编译和调试
+            "args": [						//后面添加的参数
                 "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "-g",						//如果需要调试，这里必须加个 g，代表用调试模式生成
+                "${file}",					// 这里就是需要编译以及调试的文件
+                "-o",						// -o 给编译生成的可执行文件取别名
+                "${fileDirname}/${fileBasenameNoExtension}",	//这里就是生成的可执行文件的名字
+                "-lpthread",				//可以在这里加上额外的参数，如动态链接库等
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${fileDirname}"		//cd 的路径
             },
             "problemMatcher": [
                 "$gcc"
@@ -680,35 +700,13 @@ print(torch.cuda.device_count())
             "group": "build",
             "detail": "调试器生成的任务。"
         },
-        {
-            "type": "cppbuild",
-            "label": "C/C++: cpp 生成活动文件",
-            "command": "/usr/bin/cpp",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
-            ],
-            "options": {
-                "cwd": "${fileDirname}"
-            },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "detail": "调试器生成的任务。"
-        }
     ],
     "version": "2.0.0"
 }
 ```
 
 -  `lauuch.json` 按 F5，然后再点击 C++（GDB/LLDB）-> C/C++: **cpp 生成活动文件**，下面是配置
+-  最重要的就是两个，一个是`"program"`，需要调试的文件，也就是 `task.json` 通过调试模式生成的文件。另外一个是 `"preLaunchTask"`，该参数表示是否先使用 `task.json` 预先生成可调试文件，这里的值，就是 `task.json` 的 `label` 
 
 ```Json
 {
@@ -721,10 +719,10 @@ print(torch.cuda.device_count())
             "name": "g++ - 生成和调试活动文件",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",	//这里就是要调试的文件
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${fileDirname}",			//cd 的路径，不太重要
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -735,7 +733,7 @@ print(torch.cuda.device_count())
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: g++ 生成活动文件",
+            "preLaunchTask": "C/C++: g++ 生成活动文件",	//该参数表示是否先使用 `task.json` 预先生成可调试文件，这里的值，就是 `task.json` 的 `label` 
             "miDebuggerPath": "/usr/bin/gdb",
             "miDebuggerArgs": "-q -ex quit; wait() { fg >/dev/null; }; /bin/gdb -q --interpreter=mi",
         }

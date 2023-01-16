@@ -258,6 +258,8 @@ echo $PATH
 
 [参考这篇博客](https://blog.csdn.net/qq_42330920/article/details/125778044)
 
+`easystroke`
+
 # Git连接github进行提交
 
 参考这两篇文章[Git上传文件代码到GitHub（超详细）](https://blog.csdn.net/weixin_43806049/article/details/124963415)、[手把手教你用git上传项目到GitHub](https://zhuanlan.zhihu.com/p/193140870)
@@ -385,11 +387,14 @@ sudo mount.exfat-fuse /dev/sdb1 /mount
 
 
 
+# 删除运行某个文件的所有进程
 
+例如，这里的 `grep -v grep` 的作用是过滤掉 `grep` 这条命令。`-v` 表示不选择
 
-
-
-
+```Shell
+ps -aef | grep 'dataset_generator.py' | grep -v grep | awk '{print $2}'
+kill -9 `ps -aef | grep 'dataset_generator.py' | grep -v grep | awk '{print $2}'`
+```
 
 
 
@@ -664,6 +669,8 @@ dashboard_port = 7500
 dashboard_user = admin
 dashboard_pwd = admin
 enable_prometheus = true
+# 添加日志文件
+log_file = /var/log/frps.log
 ```
 
 ### 开放公网服务器入站端口
@@ -782,6 +789,8 @@ remote_port = 6001
 
 ```Shell
 ssh -o PreferredAuthentications=keyboard-interactive  192750@210.39.9.3
+ssh -o PreferredAuthentications=keyboard-interactive  192750#UTF-8#1079#SSH#adminroot@210.39.9.3
+# 密码 xiaomi@3c511
 ```
 
 
@@ -826,7 +835,7 @@ sudo crontab -u tianyu -l
 
 到这里就可以确定是被植入了挖矿木马，删除 `/tmp/.font-unix/CVE-2021-4034-main` 下的 `lan` 文件夹就行了
 
-在 `var/spool/cron` 下面，查看是否有恶意仿造的文件，是否存在非法定时任务脚本，并清理
+在 `/var/spool/cron` 下面，查看是否有恶意仿造的文件，是否存在非法定时任务脚本，并清理
 
 ![](https://cdn.jsdelivr.net/gh/vaesong/Images//2022-11-07_13-19.png)
 
@@ -978,5 +987,37 @@ sudo ufw allow 80
 
 ```Shell
 sudo ufw delete allow 80
+```
+
+
+
+# history命令
+
+当用户登录时候，这次登录执行的命令会存放到系统的缓冲区中
+
+使用 `history` 命令可以查看本次登录的所有历史命令
+
+当用户退出登录的时候，系统会自动把缓冲区的命令存放到指定的文件中去，通常是 `~/.bash_history` 
+
+想要清空当次系统缓冲区的命令，这样就不会留下记录，`history -c` 
+
+设置时间格式，但是保存到文件中格式好像没变
+
+```Shell
+USER_IP=`who -u am i 2>/dev/null| awk '{print $NF}'|sed -e 's/[()]//g'`
+DT=`date +"%Y%m%d_%H:%M:%S"`
+export HISTTIMEFORMAT="${USER}@${USER_IP}_$DT "
+```
+
+
+
+# w3m访问不能解码
+
+访问的时候出现 `gzip: stdin: not in gzip format` 导致无法正常的访问网站
+
+在查询的时候传递接受的编码方式
+
+```Shell
+w3m www.baidu.com -o accept_encoding='identity;q=0'
 ```
 

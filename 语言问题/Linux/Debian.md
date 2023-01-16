@@ -246,7 +246,7 @@ export DISPLAY=:0.0
 [PicGo官网](https://github.com/Molunerfinn/PicGo/releases) 去下载发行版，选择 appimage，这样下载后直接双击就能运行，配置PicGo，下面是一些配置以及相应的 token
 
 ```Shell
-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
+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
 # 加速
 https://cdn.jsdelivr.net/gh/vaesong/Images/
 ```

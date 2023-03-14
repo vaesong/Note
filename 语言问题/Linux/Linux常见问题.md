@@ -238,6 +238,14 @@ Host liuchang
     User liuchang
 ```
 
+补充： xhost 的安装
+
+```Shell
+sudo apt-get install x11-xserver-utils
+```
+
+
+
 # 服务器的 tensorboard 可视化
 
 ```Shell
@@ -791,6 +799,9 @@ remote_port = 6001
 ssh -o PreferredAuthentications=keyboard-interactive  192750@210.39.9.3
 ssh -o PreferredAuthentications=keyboard-interactive  192750#UTF-8#1079#SSH#adminroot@210.39.9.3
 # 密码 xiaomi@3c511
+
+# 联网
+w3m https://drcom.szu.edu.cn/a70.htm?url=newtab.firefoxchina.cn/newtab/as/activity-stream.html
 ```
 
 
@@ -1019,5 +1030,132 @@ export HISTTIMEFORMAT="${USER}@${USER_IP}_$DT "
 
 ```Shell
 w3m www.baidu.com -o accept_encoding='identity;q=0'
+```
+
+
+
+# 包的依赖问题
+
+The following packages have unmet dependencies
+
+使用 `aptitude` 来安装
+
+```Shell
+sudo apt-get install aptitude
+sudo aptitude install XXXXX 
+```
+
+
+
+# 查看当前启动方式
+
+如果启动方式为 graphical.target ，则表示默认启动方式为进入图形界面
+
+```Shell
+systemctl get-default
+```
+
+
+
+# Isaac sim(docker + client)
+
+```python
+kit = SimulationApp(launch_config=CONFIG)
+ext_manager = omni.kit.app.get_app().get_extension_manager()
+kit.set_setting("/app/window/drawMouse", True)
+kit.set_setting("/app/livestream/proto", "ws")
+ext_manager.set_extension_enabled_immediate("omni.kit.livestream.core", True)
+ext_manager.set_extension_enabled_immediate("omni.kit.livestream.native", True)
+```
+
+```Python
+from omni.isaac.kit import SimulationApp
+
+# This sample enables a livestream server to connect to when running headless
+CONFIG = {
+    "width": 1280,
+    "height": 720,
+    "window_width": 1920,
+    "window_height": 1080,
+    "headless": True,
+    "renderer": "RayTracedLighting",
+    "display_options": 3286,  # Set display options to show default grid
+}
+
+
+# Start the omniverse application
+kit = SimulationApp(launch_config=CONFIG)
+
+from omni.isaac.core.utils.extensions import enable_extension
+
+# Default Livestream settings
+kit.set_setting("/app/window/drawMouse", True)
+kit.set_setting("/app/livestream/proto", "ws")
+kit.set_setting("/app/livestream/websocket/framerate_limit", 120)
+kit.set_setting("/ngx/enabled", False)
+
+# Note: Only one livestream extension can be enabled at a time
+# Enable Native Livestream extension
+# Default App: Streaming Client from the Omniverse Launcher
+enable_extension("omni.kit.livestream.native")
+
+# Enable WebSocket Livestream extension
+# Default URL: http://localhost:8211/streaming/client/
+# enable_extension("omni.services.streamclient.websocket")
+
+# Enable WebRTC Livestream extension
+# Default URL: http://localhost:8211/streaming/webrtc-client/
+# enable_extension("omni.services.streamclient.webrtc")
+
+# Run until closed
+while kit._app.is_running() and not kit.is_exiting():
+    # Run in realtime mode, we don't specify the step size
+    kit.update()
+
+kit.close()
+```
+
+
+
+# VNC 配置远程连接
+
+首先[参考链接](https://www.mintimate.cn/2021/05/15/installVNC/)
+
+xfce什么的就不用装了，已经装过 gnome 就行
+
+主要的是 `vncserver` 的配置，在 `~/.vnc/xstartup` 下面，之前的都是黑屏什么的。最主要的是 [参考这篇](https://blog.csdn.net/f066314/article/details/126745810)
+
+```Shell
+#!/bin/sh
+export XKL_XMODMAP_DISABLE=1
+export XDG_CURRENT_DESKTOP="GNOME-Flashback:GNOME"
+export XDG_MENU_PREFIX="gnome-flashback-"
+gnome-session --session=gnome-flashback-metacity --disable-acceleration-check &
+```
+
+
+
+# Todesk 虚拟屏
+
+安装虚拟屏软件
+
+```Shell
+sudo apt-get install  xserver-xorg-core-hwe-18.04
+sudo apt-get install  xserver-xorg-video-dummy
+```
+
+
+
+。。。。太麻烦了，其实主要是使用了自动登陆或者其他原因吧，系统使用Wayland窗口时todesk等会获取不到屏幕，在开机登陆界面右下角的小齿轮那里把Wayland切换回xorg就可以了，也可以手动禁用Wayland，/etc/gdm3/custom.conf取消注释即可
+\#WaylandEnable=false。
+注销或者重启后进入
+设置-关于-窗口系统，显示为x11即可，再次用todesk连接，已经有桌面了
+
+
+
+# Ubuntu 命令打开系统设置
+
+```Shell
+gnome-control-center
 ```
 

@@ -104,6 +104,18 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 
 
 
+**An *NVIDIA* *kernel* *module* ‘*nvidia-drm*’ *appears* *to* *already* *be* *loaded* *in* *your*  kernel****
+
+**卸载已经安装的 nvidia 驱动** ，亲测卸载了之前的 470 driver
+
+```Shell
+#关键的命令：
+sudo apt-get purge nvidia-cuda*
+sudo apt-get purge nvidia-*
+```
+
+
+
 亮度调节：
 
 之前装 510 驱动的时候，通过 grub 设置，可以调节亮度
@@ -246,7 +258,7 @@ export DISPLAY=:0.0
 [PicGo官网](https://github.com/Molunerfinn/PicGo/releases) 去下载发行版，选择 appimage，这样下载后直接双击就能运行，配置PicGo，下面是一些配置以及相应的 token
 
 ```Shell
-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
+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
 # 加速
 https://cdn.jsdelivr.net/gh/vaesong/Images/
 ```
@@ -470,6 +482,16 @@ sudo apt-get install obs-studio
 
 
 
+## Kdenlive（视频剪辑）
+
+```Shell
+sudo add-apt-repository ppa:kdenlive/kdenlive-stable
+sudo apt update
+sudo apt install kdenlive
+```
+
+
+
 ## Xdm
 
 似乎只能下载视频...
@@ -541,6 +563,8 @@ sudo vim  /etc/proxychains.conf
 注意这里需要把 proxy_dnf 屏蔽掉，这样不让其走自身的域名解析服务
 
 然后在最后的 sock 改为自己的代理地址，注意是 sock 端口，而不是 http 端口
+
+命令行的话 v2ray 的配置在 `/usr/local/etc/v2ray/config.json` 目录下面，[命令行界面参考这里](http://www.hackdig.com/01/hack-250201.htm)
 
 ```Shell
 socks5 127.0.0.1 1089

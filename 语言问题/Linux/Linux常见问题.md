@@ -133,6 +133,9 @@ sudo useradd 3c -m -d /data1/3c -s /bin/bash
 sudo ln -s /data1/3c /home/3c
 # 到 /etc/passwd 文件中修改家目录
 sudo vim /etc/passwd
+
+#永久性删除用户账号
+userdel <用户名称>
 ```
 
 
@@ -168,6 +171,27 @@ sudo vim /etc/passwd
   -U, --user-group              创建与用户同名的组
   -Z, --selinux-user SEUSER             为 SELinux 用户映射使用指定 SEUSER
 ```
+
+
+
+
+
+# 用户组
+
+```shell
+# 已有用户添加到用户组， -a 表示 append， -G 表示用户组的名称
+usermod -a -G <group名称> <用户名>
+
+# 查看用户组
+grep <group名称> /etc/group
+
+# 将用户从该用户的附属组中删除
+gpasswd -d <用户名称> <用户组名称>
+```
+
+
+
+
 
 
 
@@ -1157,5 +1181,84 @@ sudo apt-get install  xserver-xorg-video-dummy
 
 ```Shell
 gnome-control-center
+```
+
+
+
+
+
+# libGL error: failed to load driver: swrast
+
+xvfb 报错出现问题，libGL error: MESA-LOADER: failed to open swrast: /lib/x86_64-linux-gnu/libLLVM-12.so.1: undefined symbol: ffi_type_sint32, version LIBFFI_BASE_7.0 (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+
+通过 `new bing` 搜索，得到答案，[参考博客](https://stackoverflow.com/questions/40092796/libgl-error-failed-to-load-driver-swrast-running-ubuntu-docker-container-on)
+
+**注意：但是不行！！！！**
+
+```Shell
+sudo apt-get install -y mesa-utils libgl1-mesa-glx
+```
+
+仔细分析报错发现，是需要 `/lib/x86_64-linux-gnu` 下的 `libLLVM-12.so.1` 这个动态库，但是这个动态库依赖 `LIBFFI_BASE_7.0`，也就是 `libffi.so.7`，但是在搜索的路径 `/usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri` 中并没有找到。
+
+使用命令查看动态库的依赖，发现所有依赖的动态库都是可以找得到的
+
+```shell
+ldd -r libLLVM-12.so.1
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230314170459.png)
+
+而且 `libffi.so.7` 在该文件夹下是可以找到的，于是想着把它移动到 `/usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri` 下面，但是并不行
+
+后面查到可能是动态库路径设置的问题，[Linux：静态库和动态库](https://blog.csdn.net/qq_45481606/article/details/119335681), [ImportError: /lib/aarch64-linux-gnu/libwayland-server.so.0: undefined symbol: ffi_type_uint32...](https://blog.csdn.net/m0_57315535/article/details/128113311) 
+
+然后首先用的 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib/x86_64-linux-gnu` 直接配置动态库的路径，结果还是不行
+
+最后在第二篇文章下解决 `export LD_PRELOAD=/lib/x86_64-linux-gnu/libffi.so.7` 。
+
+
+
+# SSH 暴力破解 IP
+
+查看密码是否被修改
+
+```Shell
+ll /etc | grep shadow
+```
+
+
+
+查看进程，因为是暴力破解，那么一般都需要 `ssh` 命令
+
+```Shell
+ps -aux | grep sshd
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230327174338.png)
+
+然后发现确实存在大量的 `sshd` 进程，命令是 `sshd iplist passbombalol 22 nproc`，后续查找才发现这条命令的意思，就是使用 `sshd` ，`iplist` 是扫描得到的 ip 地址保存的文件。`passbombalol` 文件存放的是大量的用户名和密码字典
+
+```Shell
+sudo find / -n iplist
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230327222516.png)
+
+```Shell
+cd /var/tmp/a/list
+ll
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230327222622.png)
+
+查看这两个文件
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230327222730.png)
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230327222758.png)
+
+```Shell
+killall -u xhx
 ```
 

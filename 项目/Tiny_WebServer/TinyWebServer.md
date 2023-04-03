@@ -276,3 +276,13 @@ sudo yum install ctags
 然后提示说不能创建路径，手动创建
 
 ![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230307115425.png)
+
+
+
+## Bug
+
+**错误的 Bug**
+
+如果是客户端有大量的数据要传输到服务器，在调用读取函数的时候，使用 ET 模式下，如果读缓冲区持续爆满，那么会产生 EAGAIN 或者 EWOULDBLOCK，但是当 break 之后，直接返回了 True，而该次数据并没有读完，从而丢失数据
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230315210109.png)

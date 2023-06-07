@@ -180,7 +180,7 @@ userdel <用户名称>
 
 ```shell
 # 已有用户添加到用户组， -a 表示 append， -G 表示用户组的名称
-usermod -a -G <group名称> <用户名>
+usermod -G <group名称> -a <用户名>
 
 # 查看用户组
 grep <group名称> /etc/group
@@ -231,7 +231,7 @@ Available platform plugins are: eglfs, linuxfb, minimal, minimalegl, offscreen, 
 
 后来经过查找，可以在终端 `ssh` 的时候，加上 `-X` 参数，或者在 `vscode` 的 `remote ssh` 时候，向下面一样配置，加上下面三行 yes ，这样的话，就不需要加上 `xvfb-run` 也能运行了，也就可以调试了
 
-还需要执行下面的命令，但是，我怎么知道是 11.0 呢，而不是 0.0？
+还需要执行下面的命令，但是，我怎么知道是 11.0 呢，而不是 0.0？ `export -p` 可以查看
 
 破案了，这里其实是把服务器的显示给转发到了我的 `Linux` 上。[DISPLAY的解释](https://blog.csdn.net/landdin2013/article/details/48264831)
 
@@ -283,6 +283,131 @@ ssh -L 本地端口:127.0.0.1:TensorBoard端口 用户名@服务器的IP地址 -
 ```shell
 echo $PATH
 ```
+
+
+
+# 服务器卡顿
+
+**CPU是不是很高**： 首先看一下 CPU 是不是占用率很高
+
+```Shell
+top
+# 或者 
+htop
+```
+
+
+
+**物理内存是不是用完了**： 发现不是很高的情况下，查看系统内存的使用情况，包括物理内存、交换内存(swap)和内核缓冲区内存
+
+```Shell
+free -h
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230410200556.png)
+
+- **free** 列显示还有多少物理内存和交换空间可用使用
+- **buff/cache** 列显示被 buffer 和 cache 使用的物理内存大小
+- **available** 列显示还可以被应用程序使用的物理内存大小
+- available <= free + buff/cache 因为有一部分page或cache是不能回收的，因为 **可使用内存 = 剩余内存 + 缓存内存**
+
+可以看到 还可以申请的物理内存 = available 比较大，但是 `free` 很少，说明剩余的物理内存不多了，但是缓存了很多
+
+
+
+**然后看 IO 是不是很高**： 查看磁盘IO使用情况
+
+```Shell
+# 后面那个1表示一秒刷新一次
+iostat -x 1
+# 没有的话安装
+sudo apt install sysstat
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230410201312.png)
+
+当发现最右侧%util很高时，表示IO就很高了。可以看到，这里磁盘的 IO 很高很高，由上可知：目前有多块物理磁盘，**sdb磁盘的io压力较大**
+
+**使用`iotop` 命令查看当前的 IO 情况**，没有的话先安装
+
+```shell
+sudo apt install iotop
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230411104354.png)
+
+可以看到，磁盘读数据的压力很大，尤其是这几个 python 程序
+
+**然后检查sda磁盘中哪个应用程序占用的io比较高**
+
+```shell
+sudo pidstat -d  1
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230411105411.png)
+
+可以看到，几个 python 程序一直读磁盘，这里选 2424884 查看。
+
+**分析应用程序中哪一个线程占用的io比较高**
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230411105749.png)
+
+由上可知：2424884 这个线程占用的io比较高
+
+**分析这个线程在干什么？**
+
+```shell
+sudo perf trace -t 2424884 -o /tmp/tmp_aa.pstrace
+cat /tmp/tmp_aa.pstrace
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230411110020.png)
+
+目前这个线程在读文件，fd为文件句柄，文件句柄号为 82
+
+**查看这个文件句柄是什么**
+
+lsof 查看进程打开的文件
+
+```shell
+lsof -p 2424884 | grep 82
+```
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230411110340.png)
+
+这个线程在疯狂从磁盘读文件， 是 `dataloader` 加载数据的文件，查看其大小
+
+```shell
+du -h XXXXX
+```
+
+![image-20230411110637354](/home/vaesong/.config/Typora/typora-user-images/image-20230411110637354.png)
+
+也不是很大，初步估计是 `pin_memory` 没有设为 `True` ，导致没有把数据加载到物理内存中
+
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230411110807.png)
+
+
+
+
+
+# 使用iftop查看带宽占用情况
+
+如果服务器带宽跑满了，查看跟哪个ip通信占用带宽比较多，还可以用来监控网卡的实时流量（可以指定网段）、反向解析IP、显示端口信息等
+
+```Shell
+yum install -y iftop
+```
+
+安装好后在服务器执行iftop -i eth1就可以查看服务器公网网卡带宽使用情况(如果只执行iftop默认检测第一块网卡使用情况，这样查的会是内网网卡eth0。
+
+```Shell
+iftop -i eth0 -P
+```
+
+
+
+
 
 
 
@@ -1219,6 +1344,39 @@ ldd -r libLLVM-12.so.1
 
 
 
+# find 查找指定的路径，但是排除某些路径
+
+例如想查找根目录，但是不想查 `/data1` 和 `data2` 
+
+```Shell
+# 添加选项 -path /data1 -prune -o
+sudo find / -path /data1 -prune -o -path /data2 -prune -o -user lsy
+```
+
+
+
+
+
+# linux 如何查找进程的执行路径
+
+首先查出进程号
+
+```Shell
+ps -aux|grep "command"
+```
+
+
+
+得到进程号之后通过查看/proc 获取进程执行路径
+
+```Shell
+ll /proc/pid/cwd
+```
+
+
+
+
+
 # SSH 暴力破解 IP
 
 查看密码是否被修改
@@ -1237,16 +1395,18 @@ ps -aux | grep sshd
 
 ![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230327174338.png)
 
+![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230410185016.png)
+
 然后发现确实存在大量的 `sshd` 进程，命令是 `sshd iplist passbombalol 22 nproc`，后续查找才发现这条命令的意思，就是使用 `sshd` ，`iplist` 是扫描得到的 ip 地址保存的文件。`passbombalol` 文件存放的是大量的用户名和密码字典
 
 ```Shell
-sudo find / -n iplist
+sudo find / -name iplist
 ```
 
 ![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230327222516.png)
 
 ```Shell
-cd /var/tmp/a/list
+cd /var/tmp/a
 ll
 ```
 
@@ -1260,5 +1420,29 @@ ll
 
 ```Shell
 killall -u xhx
+```
+
+
+
+# Linux 更新 CUDA , 不用安装驱动
+
+[非root用户在linux下安装多个版本的CUDA和cuDNN（cuda 8、cuda 10.1 等）](https://blog.csdn.net/hizengbiao/article/details/88625044)
+
+[ubantu下非root用户安装CUDA和cuDNN——以CUDA11.6为例](https://zhuanlan.zhihu.com/p/614819188)
+
+方法流程
+
+1. 下载和 `nvidia` 驱动匹配的 `CUDA Toolkit` 版本
+2. 下载和 `CUDA Toolkit` 版本匹配的 `cudnn` 
+3. 安装 `CUDA Toolkit` 
+4. 把 `cudnn` 的 `include` 和 `lib` 文件夹下的文件复制到 `CUDA Toolkit` 对应的文件夹下，并修改权限
+5. 配置路径
+
+
+
+# 进入docker 使用root用户的方式
+
+```shell
+docker exec -it --user root <container id> bash
 ```
 

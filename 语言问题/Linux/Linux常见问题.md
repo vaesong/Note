@@ -370,7 +370,7 @@ cat /tmp/tmp_aa.pstrace
 lsof 查看进程打开的文件
 
 ```shell
-lsof -p 2424884 | grep 82
+sudo lsof -p 2424884 | grep 82
 ```
 
 ![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230411110340.png)
@@ -916,6 +916,19 @@ sudo systemctl start frpc
 
 在客户端的（也就是内网服务器）的 `frpc.ini` 的文件中，加上 `tls_enable = true`
 
+如果报错
+
+```shell
+login to server failed: connection write timeout
+```
+
+[参考这个](https://github.com/fatedier/frp/issues/3193)，应该是异常流量被学校的防火墙给封了，在两边的配置文件里加上
+
+```
+tls_enable=true
+disable_custom_tls_first_byte = true
+```
+
 ```Shell
 [common]
 server_addr = 120.76.100.14
@@ -1444,5 +1457,27 @@ killall -u xhx
 
 ```shell
 docker exec -it --user root <container id> bash
+```
+
+
+
+# 重启网络
+
+重启网络服务是另一种重启网络的方式
+
+```Shell
+sudo service networking restart
+```
+
+如果使用的是systemd服务管理器，可以使用以下命令重启网络服务：
+
+```shell
+sudo systemctl restart networking.service
+```
+
+如果使用的是network-manager在Debian上
+
+```shell
+sudo systemctl restart NetworkManager.service
 ```
 

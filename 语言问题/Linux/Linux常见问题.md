@@ -883,7 +883,7 @@ token = 12345678
 type = tcp
 local_ip = 127.0.0.1
 local_port = 22
-remote_port = 9018  #这个端口就对应了一台实验室服务器的SSH连接，这里把端口和校园网服务器编号保持一致方便记忆
+remote_port = 6001  #这个端口就对应了一台实验室服务器的SSH连接，这里把端口和校园网服务器编号保持一致方便记忆
 ```
 
 ### 开放公网服务器入站端口
@@ -945,7 +945,110 @@ remote_port = 6001
 
 
 
-# Linux 删除问题
+## 4. 被学校屏蔽
+
+
+
+# Docker部署 frp
+
+服务端和客户端分别拉取两个镜像
+
+```shell
+# 服务端 frps
+docker pull snowdreamtech/frps
+
+# 客户端 frpc
+docker pull snowdreamtech/frpc
+```
+
+然后分别找个位置创建 `frp` 文件夹，再创建两个文件
+
+- 服务端： `frps.toml` 和 `restart.sh`
+- 客户端： `fprc.toml` 和 `restart.sh`
+
+`frps.toml` 配置
+
+```Shell
+[common]
+bind_port = 7000
+#kcp_bind_port = 7000
+# 启用面板
+dashboard_port = 7500
+# 面板登录名和密码
+dashboard_user = vaesong
+dashboard_pwd = 1234
+# 使用http代理并使用8888端口进行穿透
+vhost_http_port = 8888
+# 使用https代理并使用9999端口进行穿透
+vhost_https_port = 9999
+# 日志路径
+log_file = ./frps.log
+# 日志级别
+log_level = info
+# 日志最大保存天数
+log_max_days = 2
+# 认证超时时间
+authentication_timeout = 900
+# 认证token，客户端需要和此对应
+token=123456789
+# 最大连接数
+max_pool_count = 15
+max_ports_per_client = 0
+
+tls_enable=true
+disable_custom_tls_first_byte = true
+```
+
+服务端 `reatsrt.sh`
+
+```shell
+NAME=frps
+IMAGE=snowdreamtech/frps
+
+docker stop $NAME
+docker rm $NAME
+
+docker run --restart=on-failure:3 --network host -v [frps.toml文件路径]:/etc/frp/frps.ini -d --name $NAME $IMAGE
+```
+
+`frpc.toml`
+
+```shell
+# 服务端配置
+[common]
+server_addr = 120.76.100.14
+# 请换成设置的服务器端口
+server_port = 7000
+token = 123456789
+tls_enable = true
+disable_custom_tls_first_byte = true
+#protocol = kcp
+
+# 配置ssh服务,ssh9009是frp连接名，每个frp客户端都要设置不一样的
+[ssh6001]
+type = tcp
+local_ip = 127.0.0.1
+local_port = 22
+remote_port = 6001
+```
+
+客户端 `restart.sh`
+
+```shell
+NAME=frpc
+IMAGE=snowdreamtech/frpc
+
+sudo docker stop $NAME
+sudo docker rm $NAME
+
+sudo docker run --restart=always --network host -v [frpc.toml文件路径]:/etc/frp/frpc.toml -d --name $NAME $IMAGE
+```
+
+
+
+
+
+# ·Linux 删除问题
 
 一定停止所有写入操作！！！还是有机会的，[参考这篇博客](https://blog.csdn.net/qq_40907977/article/details/106761592)
 

@@ -1,6 +1,6 @@
 # 登录数据库
 
-```mys
+```mysql
 mysql -u root -p
 ```
 
@@ -9,7 +9,7 @@ mysql -u root -p
 # 查询所有的数据库
 
 ```mysql
-show datdabases;
+show datadabases;
 ```
 
 
@@ -324,11 +324,14 @@ VALUES('value', 'value'), ('value', 'value');
 
 
 ```mysql
-insert into user values('hrj','123');
+insert into user 
+values('hrj','123');
 
-insert into user(username, passwd) values('tianyu', '1q2w3e');
+insert into user(username, passwd) 
+values('tianyu', '1q2w3e');
 
-insert into user(username, passwd) values('abc', 'abc'), ('qwe', '678');
+insert into user(username, passwd) 
+values('abc', 'abc'), ('qwe', '678');
 ```
 
 ![](https://cdn.jsdelivr.net/gh/vaesong/Images//20230302165620.png)
@@ -336,7 +339,8 @@ insert into user(username, passwd) values('abc', 'abc'), ('qwe', '678');
 ## 插入检索出的数据
 
 ```mysql 
-insert into client(username, passwd) select username, passwd from user;
+insert into client(username, passwd) 
+select username, passwd from user;
 ```
 
 

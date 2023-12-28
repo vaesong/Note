@@ -172,7 +172,7 @@ sudo dpkg --purge XXXXX
 # 安装，会安装在
 sudo apt install XXXX
 # 卸载软件及其配置 
-apt-get --purge remove  XXXX
+sudo apt-get --purge remove  XXXX
 ```
 
 ```Shell
@@ -300,6 +300,14 @@ sudo apt install xclip
 ## WPS
 
 官网下载
+
+不能播放视频, **安装所有必要的多媒体编解码器**
+
+```Shell
+sudo apt-get install ubuntu-restricted-extras
+```
+
+
 
 
 
@@ -624,6 +632,8 @@ unset all_proxy
 
 然后点击布局、配置、下载，选的是 mcOS BS Layout for Latte Dock
 
+
+
 ## 小插件
 
 查看网速的，调整颜色	netspeed widget
@@ -656,7 +666,7 @@ sudo apt-get install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-pl
 
 ## Anaconda
 
-下载脚本，在 zp_3c 服务器上的 home 下面
+下载脚本，官网下载
 
 然后运行，anaconda创建成功
 
